@@ -1,0 +1,25 @@
+sudo: required
+services:
+  - docker
+
+# Build test env
+before_install:
+  - docker build -t sliu/react-test -f ./client/Dockerfile.dev ./client
+
+# Run test scripts
+script:
+  - docker run -e CI=true sliu/react-test npm test
+
+# Build prod env after test scripts return exit(0)
+after_success:
+  - docker build -t sliu/md-client ./client
+  - docker build -t sliu/md-nginx ./nginx
+  - docker build -t sliu/md-server ./server
+  - docker build -t sliu/md-worker ./server
+  # log in to the Docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Push images to Docker Hub
+  - docker push sliu/md-client
+  - docker push sliu/md-nginx
+  - docker push sliu/md-server
+  - docker push sliu/md-worker
